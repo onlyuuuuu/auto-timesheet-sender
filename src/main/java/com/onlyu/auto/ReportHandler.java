@@ -155,7 +155,7 @@ public class ReportHandler implements Closeable
             WeekEntry weekEntry = weekEntries.get(i);
             if (weekEntry.hasContent())
                 break;
-            if (weekEntry.isCurrent() || weekEntry.isFuture())
+            if (weekEntry.isFuture())
                 continue;
             weekEntry
                 .beginAt("18:00")
@@ -175,7 +175,7 @@ public class ReportHandler implements Closeable
             WeekEntry weekEntry = weekEntries.get(i);
             if (weekEntry.hasBeenSent())
                 break;
-            if (weekEntry.isFuture())
+            if (weekEntry.isCurrent() || weekEntry.isFuture())
                 continue;
             weekEntry.markAsSent();
         }
@@ -187,7 +187,7 @@ public class ReportHandler implements Closeable
         for (int i = weekEntries.size() - 1; i >= 0; i--)
         {
             WeekEntry weekEntry = weekEntries.get(i);
-            if (weekEntry.hasContent() && !weekEntry.hasBeenSent())
+            if (weekEntry.isPast() && weekEntry.hasContent() && !weekEntry.hasBeenSent())
                 return true;
         }
         return false;

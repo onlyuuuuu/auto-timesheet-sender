@@ -45,6 +45,7 @@ public class AutoUpdater
         String recipientsArg = args[3];
         String ccRecipientsArg = args[4];
         String projectNameArg = args[5];
+        boolean noEmailMode = args.length > 6 && "--no-email-mode".equals(args[6]);
 
         System.out.printf("Base directory path provided: [%s]\n", baseDirPathArg);
         File baseDirPath = new File(baseDirPathArg);
@@ -192,7 +193,8 @@ public class AutoUpdater
         // Integrate
         message.setContent(multipart);
         // Send it!
-        Transport.send(message);
+        if (!noEmailMode)
+            Transport.send(message);
 
         // Mark all week entries as sent!
         for (File report : toBeSentReports)

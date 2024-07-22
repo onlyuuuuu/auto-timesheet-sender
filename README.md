@@ -13,3 +13,5 @@ java -jar build/libs/auto-timesheet-sender.jar '<base directory>' '<sender email
 ```
 
 Currently only `@outlook.com` mail domain is supported, no app password, just the actual password would do.
+
+If you just want a "dry run", just add at the end of the command with `--no-email-mode`
