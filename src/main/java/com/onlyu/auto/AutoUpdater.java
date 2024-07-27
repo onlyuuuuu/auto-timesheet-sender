@@ -6,6 +6,7 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.eclipse.angus.mail.util.MailConnectException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,10 +20,11 @@ import java.util.*;
 
 public class AutoUpdater
 {
-    public static String _HOST = "smtp-mail.outlook.com";
-    public static String _PORT = "587";
-    public static String _SUBJECT = "[%s] Andy - Timesheet - %s - %s";
-    public static String _CONTENT =
+    public static final String _HOST = "smtp-mail.outlook.com";
+    public static final String _PORT = "587";
+    public static final int _RETRY_ATTEMPTS_THRESHOLD = 120;
+    public static final String _SUBJECT = "[%s] Andy - Timesheet - %s - %s";
+    public static final String _CONTENT =
     """
         Dear everyone,
 
@@ -45,7 +47,9 @@ public class AutoUpdater
         String recipientsArg = args[3];
         String ccRecipientsArg = args[4];
         String projectNameArg = args[5];
-        boolean noEmailMode = args.length > 6 && "--no-email-mode".equals(args[6]);
+        boolean noEmailMode = (args.length > 6 && "--no-email-mode".equals(args[6])) || (args.length > 7 && "--no-email-mode".equals(args[7]));
+        boolean dryRunMode = (args.length > 6 && "--dry-run".equals(args[6])) || (args.length > 7 && "--dry-run".equals(args[7]));
+        noEmailMode = dryRunMode ? true : noEmailMode;
 
         System.out.printf("Base directory path provided: [%s]\n", baseDirPathArg);
         File baseDirPath = new File(baseDirPathArg);
@@ -123,7 +127,9 @@ public class AutoUpdater
             // Load the report
             try (ReportHandler handler = ReportHandler.of(report))
             {
-                handler.updateContent();
+                handler
+                    .updateContent()
+                    .save();
                 StringBuilder sb = new StringBuilder();
                 for (WeekEntry entry : handler.getWeekEntries())
                 {
@@ -141,13 +147,15 @@ public class AutoUpdater
             }
         }
 
-        if (finalUnsentContentsTitle.isEmpty())
+        if (finalUnsentContentsTitle.isEmpty() && !dryRunMode)
         {
             System.out.printf("No need to send anything at the moment.\n");
             return;
         }
 
-        finalUnsentContentsTitle = finalUnsentContentsTitle.delete(finalUnsentContentsTitle.length() - 3, finalUnsentContentsTitle.length());
+        finalUnsentContentsTitle = !finalUnsentContentsTitle.isEmpty()
+            ? finalUnsentContentsTitle.delete(finalUnsentContentsTitle.length() - 3, finalUnsentContentsTitle.length())
+            : finalUnsentContentsTitle;
         System.out.printf("Sending reports for %s now...\n", finalUnsentContentsTitle);
 
         if (args[1] == null || args[1].isBlank())
@@ -192,26 +200,49 @@ public class AutoUpdater
             multipart.addBodyPart(bodyPart);
         // Integrate
         message.setContent(multipart);
-        // Send it!
-        if (!noEmailMode)
+        // Check for internet connection
+        System.out.printf("Checking mail server connectivity...\n");
+        try (Transport transport = message.getSession().getTransport())
         {
-            // Check for internet connection
-            int attemptThreshold = 0;
-            while (attemptThreshold <= 200)
+            int attempt = 0;
+            while (attempt <= _RETRY_ATTEMPTS_THRESHOLD)
             {
-                if (message.getSession().getTransport().isConnected())
-                    break;
+                try
+                {
+                    transport.connect(senderArg, passwordArg);
+                    if (transport.isConnected())
+                    {
+                        System.out.printf("Acquired connection to mail server. Confirmed that internet connectivity is active!\n");
+                        break;
+                    }
+                }
+                catch (MailConnectException e)
+                {
+                    System.err.printf("Might be internet connection issue, error: %s!\n", e.getMessage());
+                }
+                ++attempt;
+                System.out.printf("Attempting to connect to mail server %s:%s. Number of efforts so far: %d\n", _HOST, _PORT, attempt);
                 Thread.sleep(1000); // Go back and try again
-                ++attemptThreshold;
             }
-            if (attemptThreshold > 200)
+            if (attempt > _RETRY_ATTEMPTS_THRESHOLD)
             {
                 System.out.printf("No internet connection, probably, nothing is going out at the moment...\n");
                 return;
             }
-            Transport.send(message);
         }
-
+        catch (Exception e)
+        {
+            System.err.printf("Exception occurred while checking for mail server connectivity\n");
+            e.printStackTrace();
+        }
+        // Are we allow to send it?
+        if (noEmailMode)
+        {
+            System.out.printf("Email sending feature is disabled! Nothing is going out!\n");
+            return;
+        }
+        // Send it!
+        Transport.send(message);
         // Mark all week entries as sent!
         for (File report : toBeSentReports)
         {
