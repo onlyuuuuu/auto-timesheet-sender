@@ -242,8 +242,11 @@ public class AutoUpdater
             return;
         }
         // Send it!
+        System.out.printf("Sending email now...\n");
         Transport.send(message);
+        System.out.printf("Email sent!\n");
         // Mark all week entries as sent!
+        System.out.printf("Marking week entries as sent...\n");
         for (File report : toBeSentReports)
         {
             try (ReportHandler handler = ReportHandler.of(report))
@@ -253,6 +256,7 @@ public class AutoUpdater
                     .save();
             }
         }
+        System.out.printf("Marked week entries as sent!\n");
     }
 
 }
