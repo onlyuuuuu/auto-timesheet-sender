@@ -35,7 +35,7 @@ public class AutoUpdater
         Anh Nguyen (Andy)
     """;
 
-    public static void main(String[] args) throws FileNotFoundException, IOException, InvalidFormatException, MessagingException
+    public static void main(String[] args) throws FileNotFoundException, IOException, InvalidFormatException, MessagingException, InterruptedException
     {
         System.out.printf("Started the timesheet updater process...\n");
 
@@ -194,7 +194,23 @@ public class AutoUpdater
         message.setContent(multipart);
         // Send it!
         if (!noEmailMode)
+        {
+            // Check for internet connection
+            int attemptThreshold = 0;
+            while (attemptThreshold <= 200)
+            {
+                if (message.getSession().getTransport().isConnected())
+                    break;
+                Thread.sleep(1000); // Go back and try again
+                ++attemptThreshold;
+            }
+            if (attemptThreshold > 200)
+            {
+                System.out.printf("No internet connection, probably, nothing is going out at the moment...\n");
+                return;
+            }
             Transport.send(message);
+        }
 
         // Mark all week entries as sent!
         for (File report : toBeSentReports)
