@@ -42,6 +42,8 @@ public class AutoUpdater
         System.out.printf("Started the timesheet updater process...\n");
 
         String baseDirPathArg = args[0];
+        Path baseDirPath = Path.of(baseDirPathArg);
+
         String senderArg = args[1];
         String passwordArg = args[2];
         String recipientsArg = args[3];
@@ -52,9 +54,9 @@ public class AutoUpdater
         noEmailMode = dryRunMode ? true : noEmailMode;
 
         System.out.printf("Base directory path provided: [%s]\n", baseDirPathArg);
-        File baseDirPath = new File(baseDirPathArg);
-        if (!baseDirPath.exists())
-            throw new FileNotFoundException("Base directory does not exist: " + baseDirPath.getAbsolutePath());
+        File baseDir = new File(baseDirPathArg);
+        if (!baseDir.exists())
+            throw new FileNotFoundException("Base directory does not exist: " + baseDir.getAbsolutePath());
         System.out.printf("Verified that base directory [%s] exists\n", baseDirPathArg);
 
         // Preload some values
@@ -103,7 +105,7 @@ public class AutoUpdater
             if (!report.exists())
             {
                 System.out.printf("Current month report %s not found. Creating a new report from scratch now...\n", currentMonthReport.getName());
-                try (ReportHandler handler = ReportHandler.of(report))
+                try (ReportHandler handler = ReportHandler.of(report, baseDirPath))
                 {
                     report = handler
                         .updatePeriodTitle()
@@ -125,7 +127,7 @@ public class AutoUpdater
             // 3. If there are not, then just let it be, next week task will handle that
 
             // Load the report
-            try (ReportHandler handler = ReportHandler.of(report))
+            try (ReportHandler handler = ReportHandler.of(report, baseDirPath))
             {
                 handler
                     .updateContent()
@@ -249,7 +251,7 @@ public class AutoUpdater
         System.out.printf("Marking week entries as sent...\n");
         for (File report : toBeSentReports)
         {
-            try (ReportHandler handler = ReportHandler.of(report))
+            try (ReportHandler handler = ReportHandler.of(report, baseDirPath))
             {
                 handler
                     .markAllAsSent()

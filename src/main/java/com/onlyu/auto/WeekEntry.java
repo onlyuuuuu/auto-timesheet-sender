@@ -32,8 +32,6 @@ public class WeekEntry
 
     WeekEntry(LocalDate start, LocalDate inclusive, Sheet sheet, int index)
     {
-        if (start.isAfter(inclusive))
-            return;
         switch (start.getDayOfWeek())
         {
             case MONDAY:
@@ -65,6 +63,8 @@ public class WeekEntry
                 _end = start.plusDays(5);
                 break;
         }
+        if (_start.isAfter(inclusive))
+            return;
         if (_end.isAfter(inclusive))
             _end = inclusive;
         _numberOfDays = (int)_start.until(_end.plusDays(1), ChronoUnit.DAYS);

@@ -8,6 +8,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.Month;
@@ -49,7 +50,7 @@ public class ReportHandler implements Closeable
     private final LocalDate _endOfMonth;
     private final List<WeekEntry> weekEntries;
 
-    ReportHandler(File file) throws IOException, InvalidFormatException
+    ReportHandler(File file, Path baseDir) throws IOException, InvalidFormatException
     {
         LocalDate now = LocalDate.now();
         _file = file;
@@ -58,6 +59,8 @@ public class ReportHandler implements Closeable
         {
             ClassLoader classloader = Thread.currentThread().getContextClassLoader();
             InputStream inputStream = classloader.getResourceAsStream(_TEMPLATE_FILE_NAME);
+            if (inputStream == null)
+                inputStream = new FileInputStream(new File(Path.of(baseDir.toString(), _TEMPLATE_FILE_NAME).toUri()));
             _package = OPCPackage.open(inputStream);
             _workbook = new XSSFWorkbook(_package);
         }
@@ -86,9 +89,30 @@ public class ReportHandler implements Closeable
 
     public static ReportHandler of(File file)
     {
+        Path baseDir = Path.of(System.getProperty("user.dir"));
         try
         {
-            return new ReportHandler(file);
+            baseDir = Path.of(ReportHandler.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            return of(file, baseDir);
+        }
+        catch (URISyntaxException e)
+        {
+            e.printStackTrace();
+            System.err.printf
+            (
+                "Error parsing base directory path of [%], falling back to default user directory of [%]\n",
+                baseDir,
+                System.getProperty("user.dir")
+            );
+            return of(file, Path.of(System.getProperty("user.dir")));
+        }
+    }
+
+    public static ReportHandler of(File file, Path path)
+    {
+        try
+        {
+            return new ReportHandler(file, path);
         }
         catch (Exception e)
         {

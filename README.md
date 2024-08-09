@@ -16,4 +16,4 @@ Currently only `@outlook.com` mail domain is supported, no app password, just th
 
 If you just want a "dry run", just add at the end of the command with `--no-email-mode` or `--dry-run`
 
-By the way, difference between a `--no-email-mode` and `--dry-run` is that `--no-email-mode` only disable email sending if there are contents to be sent. With `--dry-run` email sending will be forced even with empty contents. However, at the end of the day, `--dry-run` is basically a `--no-email-mode` with force sending empty contents. Hope that makes sense!
+By the way, difference between a `--no-email-mode` and `--dry-run` is that `--no-email-mode` only disable email sending if there are contents to be sent. With `--dry-run` email sending will be forced even with empty contents. Ultimately, at the end of the day, `--dry-run` is basically a `--no-email-mode` with force sending empty contents. Hope that makes sense!
