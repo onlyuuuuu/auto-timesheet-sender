@@ -181,6 +181,8 @@ public class ReportHandler implements Closeable
                 break;
             if (weekEntry.isFuture())
                 continue;
+            if (weekEntry.isCurrent())
+                continue;
             weekEntry
                 .beginAt("18:00")
                 .endAt("23:00")

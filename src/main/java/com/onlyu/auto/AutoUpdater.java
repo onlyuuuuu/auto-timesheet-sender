@@ -20,8 +20,8 @@ import java.util.*;
 
 public class AutoUpdater
 {
-    public static final String _HOST = "smtp-mail.outlook.com";
-    public static final String _PORT = "587";
+    public static final String _HOST = "smtp.gmail.com";
+    public static final String _PORT = "465";
     public static final int _RETRY_ATTEMPTS_THRESHOLD = 120;
     public static final String _SUBJECT = "[%s] Andy - Timesheet - %s - %s";
     public static final String _CONTENT =
@@ -164,11 +164,12 @@ public class AutoUpdater
             throw new RuntimeException("No SMTP Outlook password was provided!");
 
         // Mail props
-        Properties properties = System.getProperties();
-        properties.setProperty("mail.smtp.host", _HOST);
-        properties.setProperty("mail.smtp.port", _PORT);
-        properties.setProperty("mail.smtp.auth", "true");
-        properties.setProperty("mail.smtp.starttls.enable", "true");
+        Properties properties = new Properties();
+        properties.put("mail.smtp.host", _HOST);
+        properties.put("mail.smtp.port", _PORT);
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.socketFactory.port", "465");
+        properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         // Core objects
         Session session = Session.getDefaultInstance(properties, new Authenticator()
         {
